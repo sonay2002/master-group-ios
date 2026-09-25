@@ -1,0 +1,20 @@
+{
+  "name": "master-group-ios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Master Group — сметы и расчёты",
+  "scripts": {
+    "copy": "npx cap copy",
+    "sync": "npx cap sync ios",
+    "open:ios": "npx cap open ios",
+    "build:ios": "npx cap sync ios && npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/ios": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3",
+    "typescript": "^5.9.2"
+  }
+}
