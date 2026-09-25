@@ -1,0 +1,69 @@
+name: Build Master Group iOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Prepare web assets
+        run: |
+          mkdir -p www
+          cp index.html www/index.html
+          cp -R css www/css
+          cp -R js www/js
+          cp -R icons www/icons
+          cp manifest.webmanifest www/manifest.webmanifest
+          cp sw.js www/sw.js
+
+      - name: Add and sync Capacitor iOS
+        run: |
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Build iOS Device archive (unsigned fallback)
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath ios/App/build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            archive \
+            -archivePath ios/App/build/MasterGroup.xcarchive
+
+      - name: Export unsigned IPA payload
+        run: |
+          set -e
+          mkdir -p artifacts/Payload
+          APP_PATH="ios/App/build/MasterGroup.xcarchive/Products/Applications/App.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "App.app was not produced at $APP_PATH"
+            find ios/App/build/MasterGroup.xcarchive -maxdepth 5 -type d -name '*.app' -print || true
+            exit 1
+          fi
+          cp -R "$APP_PATH" artifacts/Payload/MasterGroup.app
+          cd artifacts
+          zip -qry MasterGroup-unsigned.ipa Payload
+
+      - name: Upload iOS Device artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: master-group-ios-device-unsigned
+          path: artifacts/MasterGroup-unsigned.ipa
